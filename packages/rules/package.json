@@ -1,0 +1,12 @@
+{
+  "name": "@bigbiim/rules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Moteur d’expressions et de formules (section 3.4), partagé front et back",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
+}

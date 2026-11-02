@@ -1,0 +1,22 @@
+{{- $w := .Values.apps.worker }}
+{{- if and $w.enabled $w.keda $w.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "bigbiim.fullname" . }}-worker
+  labels:
+    {{- include "bigbiim.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "bigbiim.fullname" . }}-worker
+  minReplicaCount: {{ $w.keda.minReplicas }}
+  maxReplicaCount: {{ $w.keda.maxReplicas }}
+  triggers:
+    - type: nats-jetstream
+      metadata:
+        natsServerMonitoringEndpoint: {{ $w.keda.natsMonitoringEndpoint | quote }}
+        account: "$G"
+        stream: {{ $w.keda.stream | quote }}
+        consumer: {{ $w.keda.consumer | quote }}
+        lagThreshold: {{ $w.keda.lagThreshold | quote }}
+{{- end }}

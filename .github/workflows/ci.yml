@@ -1,0 +1,60 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://bigbiim:bigbiim@127.0.0.1:5432/bigbiim?schema=public"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run build -w @bigbiim/rules
+      - run: npm run db:generate
+      - run: npm run typecheck
+      - run: npm test
+
+  docker-compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Valider la configuration Docker Compose
+        run: docker compose config --quiet
+
+  docker-images:
+    runs-on: ubuntu-latest
+    needs: build-test
+    strategy:
+      matrix:
+        app: [api, worker, web, admin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Construire l'image ${{ matrix.app }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile.${{ matrix.app }}
+          push: false
+          load: true
+          tags: bigbiim-${{ matrix.app }}:ci
+      - name: Analyse de sécurité (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: bigbiim-${{ matrix.app }}:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint infra/helm/bigbiim

@@ -1,0 +1,97 @@
+steps:
+  - id: install-dependencies
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - install
+      - --no-audit
+      - --no-fund
+      - --no-progress
+    env:
+      - DATABASE_URL=postgresql://bigbiim:bigbiim@127.0.0.1:5432/bigbiim?schema=public
+
+  - id: generate-prisma-client
+    name: node:22-bookworm
+    entrypoint: npx
+    args:
+      - prisma
+      - generate
+      - --schema
+      - apps/api/prisma/schema.prisma
+    env:
+      - DATABASE_URL=postgresql://bigbiim:bigbiim@127.0.0.1:5432/bigbiim?schema=public
+
+  - id: validate-prisma-schema
+    name: node:22-bookworm
+    entrypoint: npx
+    args:
+      - prisma
+      - validate
+      - --schema
+      - apps/api/prisma/schema.prisma
+    env:
+      - DATABASE_URL=postgresql://bigbiim:bigbiim@127.0.0.1:5432/bigbiim?schema=public
+
+  - id: build-rules-package
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - run
+      - build
+      - -w
+      - "@bigbiim/rules"
+
+  - id: typecheck-workspaces
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - run
+      - typecheck
+
+  - id: build-api
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - run
+      - build
+      - -w
+      - "@bigbiim/api"
+
+  - id: build-worker
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - run
+      - build
+      - -w
+      - "@bigbiim/worker"
+
+  - id: build-web
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - run
+      - build
+      - -w
+      - "@bigbiim/web"
+
+  - id: build-admin
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - run
+      - build
+      - -w
+      - "@bigbiim/admin"
+
+  - id: unit-tests
+    name: node:22-bookworm
+    entrypoint: npm
+    args:
+      - test
+      - --
+      - --reporter=default
+
+timeout: 1800s
+options:
+  logging: CLOUD_LOGGING_ONLY

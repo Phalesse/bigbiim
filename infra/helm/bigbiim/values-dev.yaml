@@ -1,0 +1,7 @@
+ingress:
+  host: dev.bigbiim.example.com
+apps:
+  api: { replicas: 1, hpa: { enabled: false } }
+  worker: { replicas: 1 }
+  web: { replicas: 1, hpa: { enabled: false } }
+  admin: { replicas: 1 }

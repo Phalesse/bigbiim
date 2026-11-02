@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbiim.local/schemas/activity-version.schema.json",
+  "title": "Définition d’une version d’activité (section 4.2)",
+  "type": "object",
+  "required": [
+    "questionnaire",
+    "roles",
+    "steps",
+    "milestones",
+    "pricing",
+    "contract_template_id",
+    "compliance",
+    "cancellation_policy",
+    "matching_mode"
+  ],
+  "properties": {
+    "questionnaire": {
+      "type": "array",
+      "description": "Champs, validations, conditions"
+    },
+    "roles": {
+      "type": "array",
+      "description": "Chaque rôle tarifé définit key (ou roleKey), skillId, quantité et formule de prix ; la compétence doit exister. Les champs obligatoires, formules et poids de matching complètent la définition."
+    },
+    "steps": {
+      "type": "array",
+      "description": "Graphe, durées, conditions"
+    },
+    "milestones": {
+      "type": "array",
+      "description": "Part, déclencheur, preuve"
+    },
+    "pricing": {
+      "type": "object",
+      "description": "Devise ISO 4217, tables tarifaires, formules, remises et frais",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "Code devise ISO 4217 ; montants exprimés en unités mineures"
+        },
+        "tables": {
+          "type": "object",
+          "description": "Tables de lookup utilisées par les formules JSONLogic"
+        }
+      }
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Code devise ISO 4217, utilisé si pricing.currency n'est pas défini"
+    },
+    "contract_template_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "compliance": {
+      "type": "object"
+    },
+    "cancellation_policy": {
+      "type": "object"
+    },
+    "matching_mode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

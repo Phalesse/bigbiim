@@ -1,0 +1,11 @@
+# Règles d'alerte de départ. Objectifs de service du document : 99,9 % de disponibilité, 95 % des requêtes sous 500 ms.
+groups:
+  - name: bigbiim
+    rules:
+      - alert: ApiIndisponible
+        expr: up{job="api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "L'API ne répond plus depuis 2 minutes"

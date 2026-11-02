@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bigbiim
+description: BIGBIIM — api, worker, web, admin (un chart commun, des valeurs par environnement)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

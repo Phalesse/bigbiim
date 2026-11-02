@@ -1,0 +1,768 @@
+// Modèles de données BIGBIIM — section 4 du document de spécification.
+// Conventions : identifiants UUID (à passer en UUID v7 côté application), dates en UTC,
+// montants en entiers (unités mineures, BigInt) + devise ISO, suppression logique (deletedAt),
+// createdAt / updatedAt / version (verrouillage optimiste), country_code sur les entités régionales.
+// Aucune relation Prisma n'est déclarée : les clés étrangères sont des champs *Id simples.
+// À vous d'ajouter les @relation et les index au fil du codage.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Section 4.1
+model User {
+  id String @id @default(uuid())
+  phone String?
+  email String?
+  passwordHash String?
+  status String
+  locale String
+  type String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+}
+
+// Section 4.1
+model Role {
+  id String @id @default(uuid())
+  userId String
+  role String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([userId])
+}
+
+// Section 4.1
+model Permission {
+  id String @id @default(uuid())
+  role String
+  resource String
+  action String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+}
+
+// Section 4.1
+model Session {
+  id String @id @default(uuid())
+  userId String
+  device String?
+  refreshTokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([userId])
+}
+
+// Section 4.1
+model ClientProfile {
+  id String @id @default(uuid())
+  userId String
+  displayName String
+  city String?
+  defaultPaymentMethod String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([userId])
+}
+
+// Section 4.1
+model NotificationPreference {
+  id String @id @default(uuid())
+  userId String
+  eventType String
+  channel String
+  enabled Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([userId])
+}
+
+// Section 4.1
+model ConsentLog {
+  id String @id @default(uuid())
+  userId String
+  documentVersion String
+  acceptedAt DateTime
+  createdAt DateTime @default(now())
+  @@index([userId])
+}
+
+// Section 4.2
+model Sector {
+  id String @id @default(uuid())
+  parentId String?
+  nameI18n Json
+  icon String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([parentId])
+}
+
+// Section 4.2
+model Skill {
+  id String @id @default(uuid())
+  sectorId String?
+  nameI18n Json
+  synonyms String[]
+  parentId String?
+  regulated Boolean
+  requiredLicenseType String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([sectorId])
+  @@index([parentId])
+}
+
+// Section 4.2
+model Activity {
+  id String @id @default(uuid())
+  sectorId String
+  slug String @unique
+  status String
+  currentVersionId String?
+  countryCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([sectorId])
+  @@index([currentVersionId])
+}
+
+// Section 4.2
+model ActivityVersion {
+  id String @id @default(uuid())
+  activityId String
+  version Int
+  status String
+  definition Json
+  publishedAt DateTime?
+  publishedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  @@index([activityId])
+}
+
+// Section 4.2
+model ContractTemplate {
+  id String @id @default(uuid())
+  name String
+  version Int
+  body String
+  variablesSchema Json
+  locale String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+// Section 4.2
+model PriceTable {
+  id String @id @default(uuid())
+  name String
+  rows Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+}
+
+// Section 4.2
+model ComplianceRule {
+  id String @id @default(uuid())
+  activityVersionId String
+  rule Json
+  countryCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([activityVersionId])
+}
+
+// Section 4.3
+model Provider {
+  id String @id @default(uuid())
+  userId String
+  type String
+  legalName String
+  bio String?
+  kycLevel Int
+  status String
+  ratingBayes Float?
+  reliabilityScore Float?
+  countryCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([userId])
+}
+
+// Section 4.3
+model ProviderSkill {
+  id String @id @default(uuid())
+  providerId String
+  skillId String
+  years Int?
+  verified Boolean
+  rateMin BigInt?
+  rateUnit String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+  @@index([skillId])
+}
+
+// Section 4.3
+model ProviderZone {
+  id String @id @default(uuid())
+  providerId String
+  city String?
+  geometry Json?
+  radiusKm Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+}
+
+// Section 4.3
+model ProviderAvailability {
+  id String @id @default(uuid())
+  providerId String
+  fromAt DateTime
+  toAt DateTime
+  capacity Int
+  type String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+}
+
+// Section 4.3
+model ProviderDocument {
+  id String @id @default(uuid())
+  providerId String
+  type String
+  fileId String
+  status String
+  expiresAt DateTime?
+  reviewedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+  @@index([fileId])
+}
+
+// Section 4.3
+model PortfolioItem {
+  id String @id @default(uuid())
+  providerId String
+  title String
+  media Json
+  activityId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+  @@index([activityId])
+}
+
+// Section 4.3
+model Badge {
+  id String @id @default(uuid())
+  providerId String
+  type String
+  grantedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+}
+
+// Section 4.4
+model Project {
+  id String @id @default(uuid())
+  clientId String
+  activityVersionId String
+  status String
+  answers Json
+  targetDate DateTime?
+  city String?
+  totalAmount BigInt?
+  currency String
+  countryCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([clientId])
+  @@index([activityVersionId])
+}
+
+// Section 4.4
+model Quote {
+  id String @id @default(uuid())
+  projectId String
+  version Int
+  lines Json
+  total BigInt
+  validUntil DateTime
+  locked Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  @@index([projectId])
+}
+
+// Section 4.4
+model ProjectRole {
+  id String @id @default(uuid())
+  projectId String
+  roleKey String
+  skillId String
+  quantity Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([skillId])
+}
+
+// Section 4.4
+model Mission {
+  id String @id @default(uuid())
+  projectRoleId String
+  providerId String?
+  status String
+  price BigInt?
+  startAt DateTime?
+  endAt DateTime?
+  offerExpiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectRoleId])
+  @@index([providerId])
+}
+
+// Section 4.4
+model MissionOffer {
+  id String @id @default(uuid())
+  missionId String
+  providerId String
+  status String
+  rank Int
+  score Float
+  explanation Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([missionId])
+  @@index([providerId])
+}
+
+// Section 4.4
+model Step {
+  id String @id @default(uuid())
+  projectId String
+  key String
+  status String
+  dependsOn String[]
+  plannedStart DateTime?
+  plannedEnd DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+}
+
+// Section 4.4
+model Milestone {
+  id String @id @default(uuid())
+  projectId String
+  stepId String?
+  amount BigInt
+  status String
+  proofRequired Json?
+  autoReleaseAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([stepId])
+}
+
+// Section 4.4
+model Proof {
+  id String @id @default(uuid())
+  milestoneId String
+  type String
+  fileId String?
+  geo Json?
+  submittedBy String
+  submittedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([milestoneId])
+  @@index([fileId])
+}
+
+// Section 4.4
+model Deliverable {
+  id String @id @default(uuid())
+  missionId String
+  fileId String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([missionId])
+  @@index([fileId])
+}
+
+// Section 4.4
+model ProjectEvent {
+  id String @id @default(uuid())
+  projectId String
+  type String
+  payload Json
+  at DateTime
+  createdAt DateTime @default(now())
+  @@index([projectId])
+}
+
+// Section 4.5
+model Contract {
+  id String @id @default(uuid())
+  projectId String
+  templateVersion Int
+  status String
+  pdfFileId String?
+  pdfHash String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([pdfFileId])
+}
+
+// Section 4.5
+model Signature {
+  id String @id @default(uuid())
+  contractId String
+  userId String
+  signedAt DateTime
+  otpRef String?
+  ip String?
+  device String?
+  createdAt DateTime @default(now())
+  @@index([contractId])
+  @@index([userId])
+}
+
+// Section 4.5
+model Amendment {
+  id String @id @default(uuid())
+  contractId String
+  reason String
+  diff Json
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([contractId])
+}
+
+// Section 4.5
+model LedgerAccount {
+  id String @id @default(uuid())
+  ownerType String
+  ownerId String?
+  kind String
+  currency String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([ownerId])
+}
+
+// Section 4.5
+model LedgerTransaction {
+  id String @id @default(uuid())
+  type String
+  reference String?
+  idempotencyKey String? @unique
+  at DateTime
+  createdAt DateTime @default(now())
+}
+
+// Section 4.5
+model LedgerEntry {
+  id String @id @default(uuid())
+  transactionId String
+  accountId String
+  direction String
+  amount BigInt
+  currency String
+  at DateTime
+  createdAt DateTime @default(now())
+  @@index([transactionId])
+  @@index([accountId])
+}
+
+// Section 4.5
+model PaymentIntent {
+  id String @id @default(uuid())
+  projectId String
+  payerId String
+  amount BigInt
+  currency String
+  operator String
+  status String
+  operatorRef String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([payerId])
+}
+
+// Section 4.5
+model Payout {
+  id String @id @default(uuid())
+  providerId String
+  amount BigInt
+  operator String
+  status String
+  approvedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([providerId])
+}
+
+// Section 4.5
+model Refund {
+  id String @id @default(uuid())
+  paymentIntentId String
+  amount BigInt
+  reason String?
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([paymentIntentId])
+}
+
+// Section 4.5
+model Invoice {
+  id String @id @default(uuid())
+  projectId String
+  number String @unique
+  lines Json
+  total BigInt
+  pdfFileId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([pdfFileId])
+}
+
+// Section 4.6
+model Review {
+  id String @id @default(uuid())
+  missionId String
+  authorId String
+  targetId String
+  rating Int
+  comment String?
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([missionId])
+  @@index([authorId])
+  @@index([targetId])
+}
+
+// Section 4.6
+model Dispute {
+  id String @id @default(uuid())
+  projectId String
+  milestoneId String?
+  openedBy String
+  status String
+  decision Json?
+  decidedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([milestoneId])
+}
+
+// Section 4.6
+model DisputeEvidence {
+  id String @id @default(uuid())
+  disputeId String
+  fileId String
+  authorId String
+  note String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([disputeId])
+  @@index([fileId])
+  @@index([authorId])
+}
+
+// Section 4.6
+model Message {
+  id String @id @default(uuid())
+  projectId String
+  authorId String
+  body String
+  attachments Json?
+  at DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([projectId])
+  @@index([authorId])
+}
+
+// Section 4.6
+model Notification {
+  id String @id @default(uuid())
+  userId String
+  type String
+  payload Json
+  channel String
+  status String
+  sentAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([userId])
+}
+
+// Section 4.6
+model File {
+  id String @id @default(uuid())
+  ownerId String
+  bucketKey String
+  mime String
+  size Int
+  checksum String?
+  scanStatus String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+  @@index([ownerId])
+}
+
+// Section 4.6
+model AuditLog {
+  id String @id @default(uuid())
+  actorId String?
+  action String
+  entity String
+  entityId String?
+  before Json?
+  after Json?
+  ip String?
+  at DateTime
+  createdAt DateTime @default(now())
+  @@index([actorId])
+  @@index([entityId])
+}
+
+// Section 4.6
+model Setting {
+  id String @id @default(uuid())
+  key String @unique
+  value Json
+  scope String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+}
+
+// Section 4.6
+model FeatureFlag {
+  id String @id @default(uuid())
+  key String @unique
+  value Json
+  scope String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  version Int @default(1)
+  deletedAt DateTime?
+}
+
+// Section 4.6
+model OutboxEvent {
+  id String @id @default(uuid())
+  type String
+  payload Json
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+}

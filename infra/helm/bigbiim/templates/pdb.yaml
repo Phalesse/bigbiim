@@ -1,0 +1,17 @@
+{{- range $name, $app := .Values.apps }}
+{{- if and $app.enabled (gt (int $app.replicas) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "bigbiim.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "bigbiim.labels" $ | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "bigbiim.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+{{- end }}
+{{- end }}

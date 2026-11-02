@@ -1,0 +1,1123 @@
+openapi: 3.0.3
+info:
+  title: BIGBIIM API
+  version: 1.0.0
+  description: Source de vérité des API (section 2). Erreurs au format RFC 7807, Idempotency-Key obligatoire sur les POST qui touchent l’argent.
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  "/auth/otp/request":
+    post:
+      tags: [identity]
+      summary: "Envoie un code par SMS/WhatsApp"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/auth/otp/verify":
+    post:
+      tags: [identity]
+      summary: "Vérifie le code, renvoie les jetons"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/auth/register":
+    post:
+      tags: [identity]
+      summary: "Crée un compte (client ou prestataire)"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/auth/login":
+    post:
+      tags: [identity]
+      summary: "Connexion par e-mail et mot de passe"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/auth/refresh":
+    post:
+      tags: [identity]
+      summary: "Renouvelle le jeton"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/auth/logout":
+    post:
+      tags: [identity]
+      summary: "Révoque la session"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/me":
+    get:
+      tags: [identity]
+      summary: "Profil courant"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    patch:
+      tags: [identity]
+      summary: "Modifie le profil"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    delete:
+      tags: [identity]
+      summary: "Demande de suppression (droit à l’effacement)"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/me/notification-preferences":
+    put:
+      tags: [identity]
+      summary: "Canaux et langues"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/sectors":
+    get:
+      tags: [catalog]
+      summary: "Arborescence des secteurs"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/activities":
+    get:
+      tags: [catalog]
+      summary: "Recherche (q, sector, city, page)"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/activities/{id}":
+    get:
+      tags: [catalog]
+      summary: "Fiche activité publiée"
+      x-roles: "public"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/activities/{id}/questionnaire":
+    get:
+      tags: [catalog]
+      summary: "Questionnaire de la version publiée"
+      x-roles: "public"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/activities/{id}/estimate":
+    get:
+      tags: [catalog]
+      summary: "Fourchette de prix indicative"
+      x-roles: "public"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/skills":
+    get:
+      tags: [catalog]
+      summary: "Catalogue de compétences"
+      x-roles: "public"
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities":
+    post:
+      tags: [builder]
+      summary: "Crée une activité en brouillon"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    get:
+      tags: [builder]
+      summary: "Liste avec statuts"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities/{id}/draft":
+    get:
+      tags: [builder]
+      summary: "Document complet du brouillon"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    put:
+      tags: [builder]
+      summary: "Enregistre le brouillon"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities/{id}/validate":
+    post:
+      tags: [builder]
+      summary: "Contrôle de cohérence (rôles, graphe sans cycle, formules valides)"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities/{id}/simulate":
+    post:
+      tags: [builder]
+      summary: "Exécute un faux projet"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities/{id}/publish":
+    post:
+      tags: [builder]
+      summary: "Publie la version n"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities/{id}/versions":
+    get:
+      tags: [builder]
+      summary: "Historique des versions"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/activities/{id}/retire":
+    post:
+      tags: [builder]
+      summary: "Retire du catalogue (projets en cours conservés)"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/skills":
+    post:
+      tags: [builder]
+      summary: "Crée ou modifie une compétence"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/sectors":
+    post:
+      tags: [builder]
+      summary: "Crée ou modifie un secteur"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers":
+    post:
+      tags: [providers]
+      summary: "Crée le profil prestataire"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}":
+    get:
+      tags: [providers]
+      summary: "Profil privé complet"
+      x-roles: "P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    patch:
+      tags: [providers]
+      summary: "Modifie le profil"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/public":
+    get:
+      tags: [providers]
+      summary: "Profil public"
+      x-roles: "public"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/skills":
+    put:
+      tags: [providers]
+      summary: "Compétences déclarées"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/documents":
+    post:
+      tags: [providers]
+      summary: "Dépose un justificatif"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/availability":
+    put:
+      tags: [providers]
+      summary: "Agenda et capacité"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/zones":
+    put:
+      tags: [providers]
+      summary: "Zones d’intervention"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/rates":
+    put:
+      tags: [providers]
+      summary: "Tarifs par compétence"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/providers/{id}/reviews":
+    get:
+      tags: [providers]
+      summary: "Avis reçus"
+      x-roles: "public"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/providers":
+    get:
+      tags: [providers]
+      summary: "File de validation (status)"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/providers/{id}/verify":
+    post:
+      tags: [providers]
+      summary: "Valide"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/providers/{id}/reject":
+    post:
+      tags: [providers]
+      summary: "Refuse avec motif"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/providers/{id}/suspend":
+    post:
+      tags: [providers]
+      summary: "Suspend"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects":
+    post:
+      tags: [projects]
+      summary: "Crée un projet depuis une version d’activité"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    get:
+      tags: [projects]
+      summary: "Liste des projets"
+      x-roles: "C,A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/answers":
+    patch:
+      tags: [projects]
+      summary: "Enregistre les réponses du questionnaire"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/quote":
+    post:
+      tags: [projects]
+      summary: "Calcule le devis"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    get:
+      tags: [projects]
+      summary: "Lit le devis courant"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/team/suggest":
+    post:
+      tags: [projects]
+      summary: "Lance le matching"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/team/{role}":
+    put:
+      tags: [projects]
+      summary: "Choisit un prestataire pour un rôle"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: role
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/team/{role}/replace":
+    post:
+      tags: [projects]
+      summary: "Remplace un prestataire"
+      x-roles: "C,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: role
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/confirm":
+    post:
+      tags: [projects]
+      summary: "Génère le contrat et ouvre la réservation"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}":
+    get:
+      tags: [projects]
+      summary: "Détail"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/timeline":
+    get:
+      tags: [projects]
+      summary: "Chronologie et phases"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/cancel":
+    post:
+      tags: [projects]
+      summary: "Annule selon les règles"
+      x-roles: "C,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions":
+    get:
+      tags: [projects]
+      summary: "Offres et missions du prestataire"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/accept":
+    post:
+      tags: [projects]
+      summary: "Accepte"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/decline":
+    post:
+      tags: [projects]
+      summary: "Refuse avec motif"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/counter":
+    post:
+      tags: [projects]
+      summary: "Contre-proposition (prix, date)"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/counter/resolve":
+    post:
+      tags: [projects]
+      summary: "Le client accepte ou refuse une contre-proposition"
+      x-roles: "C,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accept]
+              properties:
+                accept: {type: boolean}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/start":
+    post:
+      tags: [projects]
+      summary: "Démarre"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/progress":
+    post:
+      tags: [projects]
+      summary: "Déclare l’avancement"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/deliverables":
+    post:
+      tags: [projects]
+      summary: "Dépose un livrable"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/complete":
+    post:
+      tags: [projects]
+      summary: "Déclare la mission terminée"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/milestones":
+    get:
+      tags: [projects]
+      summary: "Jalons du projet"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/milestones/{id}/submit-proof":
+    post:
+      tags: [projects]
+      summary: "Soumet les preuves"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/milestones/{id}/approve":
+    post:
+      tags: [projects]
+      summary: "Valide, libère le paiement"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/milestones/{id}/contest":
+    post:
+      tags: [projects]
+      summary: "Conteste, ouvre un litige"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/contract":
+    get:
+      tags: [contracts]
+      summary: "Contrat courant"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/contracts/{id}/sign":
+    post:
+      tags: [contracts]
+      summary: "Signature (OTP)"
+      x-roles: "C,P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/contracts/{id}/pdf":
+    get:
+      tags: [contracts]
+      summary: "Document signé"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/payments/intents":
+    post:
+      tags: [payments]
+      summary: "Crée un paiement (acompte ou solde)"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/payments/webhooks/{operator}":
+    post:
+      tags: [payments]
+      summary: "Confirmation Mobile Money ou carte"
+      x-roles: "operator"
+      parameters:
+        - name: operator
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/payments":
+    get:
+      tags: [payments]
+      summary: "Historique"
+      x-roles: "C,A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/wallets/me":
+    get:
+      tags: [payments]
+      summary: "Solde et mouvements"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/wallets/me/payouts":
+    post:
+      tags: [payments]
+      summary: "Demande de retrait"
+      x-roles: "P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/invoices":
+    get:
+      tags: [payments]
+      summary: "Factures et reçus"
+      x-roles: "C,P"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/refunds":
+    post:
+      tags: [payments]
+      summary: "Remboursement"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/payouts/{id}/approve":
+    post:
+      tags: [payments]
+      summary: "Valide un retrait sensible"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/projects/{id}/messages":
+    get:
+      tags: [messaging]
+      summary: "Historique des messages"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+    post:
+      tags: [messaging]
+      summary: "Envoie un message"
+      x-roles: "C,P,A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/missions/{id}/review":
+    post:
+      tags: [trust]
+      summary: "Note et avis"
+      x-roles: "C"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/disputes":
+    post:
+      tags: [trust]
+      summary: "Ouvre un litige"
+      x-roles: "C,P"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/disputes/{id}/evidence":
+    post:
+      tags: [trust]
+      summary: "Ajoute une preuve"
+      x-roles: "C,P"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/disputes/{id}/decision":
+    post:
+      tags: [trust]
+      summary: "Rend une décision"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/notifications":
+    get:
+      tags: [notifications]
+      summary: "Liste"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/notifications/{id}/read":
+    post:
+      tags: [notifications]
+      summary: "Marque comme lue"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/files/presign":
+    post:
+      tags: [files]
+      summary: "URL signée de dépôt"
+      x-roles: "any"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/files/{id}":
+    get:
+      tags: [files]
+      summary: "Téléchargement contrôlé"
+      x-roles: "authorized"
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/kpis":
+    get:
+      tags: [audit]
+      summary: "Indicateurs"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/audit-logs":
+    get:
+      tags: [audit]
+      summary: "Journal d’audit"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}
+  "/admin/settings":
+    put:
+      tags: [audit]
+      summary: "Commissions, zones, drapeaux"
+      x-roles: "A"
+      security: [{bearerAuth: []}]
+      responses:
+        "200": {description: OK}
+        default: {description: "Erreur (RFC 7807)"}

@@ -1,0 +1,15 @@
+{
+  "slug": "renovation-chantier",
+  "note": "Activité à projet long et jalons multiples (par exemple rénovation ou chantier). Teste : jalons, preuves, retenue de garantie, avenants. À décrire entièrement par configuration (section 6.3).",
+  "definition": {
+    "questionnaire": [],
+    "roles": [],
+    "steps": [],
+    "milestones": [],
+    "pricing": {},
+    "contract_template_id": null,
+    "compliance": {},
+    "cancellation_policy": {},
+    "matching_mode": null
+  }
+}

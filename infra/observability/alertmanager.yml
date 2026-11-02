@@ -1,0 +1,5 @@
+# À brancher sur votre canal (e-mail, WhatsApp via passerelle, etc.).
+route:
+  receiver: defaut
+receivers:
+  - name: defaut

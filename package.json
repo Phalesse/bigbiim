@@ -1,0 +1,29 @@
+{
+  "name": "bigbiim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BIGBIIM : moteur universel d’activités (monolithe modulaire)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "db:generate": "prisma generate --schema apps/api/prisma/schema.prisma",
+    "db:push": "prisma db push --accept-data-loss --skip-generate --schema apps/api/prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema apps/api/prisma/schema.prisma",
+    "db:constraints": "prisma db execute --file apps/api/prisma/sql/constraints.sql --schema apps/api/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "prettier": "^3.3.0",
+    "prisma": "^5.22.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

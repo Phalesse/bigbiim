@@ -1,0 +1,5 @@
+ingress:
+  host: staging.bigbiim.example.com
+apps:
+  api: { replicas: 2, hpa: { min: 2, max: 4 } }
+  web: { replicas: 2, hpa: { min: 2, max: 4 } }

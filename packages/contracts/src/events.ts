@@ -1,0 +1,30 @@
+/** Événements du domaine (section 3.17). Schémas JSON : packages/contracts/events/. */
+export const EVENT_TYPES = [
+  'ProjetCréé',
+  'RéponsesProjetModifiées',
+  'DevisCalculé',
+  'ÉquipeConfirmée',
+  'ContratSigné',
+  'AcomptePayé',
+  'MissionProposée',
+  'MissionAcceptée',
+  'MissionRefusée',
+  'MissionContreProposée',
+  'MissionPlanifiée',
+  'MissionCommencée',
+  'AvancementMissionDéclaré',
+  'LivrableDéposé',
+  'MissionTerminée',
+  'PreuveSoumise',
+  'JalonValidé',
+  'PaiementLibéré',
+  'LitigeOuvert',
+  'LitigeRésolu',
+  'ProjetTerminé',
+  'ProjetAnnulé',
+  'AvisPublié',
+  'PrestataireVérifié',
+  'ActivitéPubliée',
+] as const;
+
+export type EventType = (typeof EVENT_TYPES)[number];

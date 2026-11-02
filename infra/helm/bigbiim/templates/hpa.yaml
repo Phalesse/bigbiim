@@ -1,0 +1,25 @@
+{{- range $name, $app := .Values.apps }}
+{{- if and $app.enabled $app.hpa $app.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "bigbiim.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "bigbiim.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "bigbiim.fullname" $ }}-{{ $name }}
+  minReplicas: {{ $app.hpa.min }}
+  maxReplicas: {{ $app.hpa.max }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $app.hpa.cpu }}
+{{- end }}
+{{- end }}

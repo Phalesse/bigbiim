@@ -1,0 +1,31 @@
+{{- if .Values.networkPolicy.enabled }}
+# Tout est interdit en entrée, sauf : trafic interne au namespace et trafic venant du contrôleur d'ingress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "bigbiim.fullname" . }}-default-deny
+  labels:
+    {{- include "bigbiim.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "bigbiim.fullname" . }}-allow
+  labels:
+    {{- include "bigbiim.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressNamespace }}
+{{- end }}

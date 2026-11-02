@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MissionRefusée",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "occurredAt",
+    "schemaVersion",
+    "correlationId",
+    "payload"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "const": "MissionRefusée"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "correlationId": {
+      "type": "string",
+      "description": "Identifiant de corrélation du projet"
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

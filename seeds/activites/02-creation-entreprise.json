@@ -1,0 +1,15 @@
+{
+  "slug": "creation-entreprise",
+  "note": "Activité administrative à étapes séquentielles (par exemple création d’entreprise). Teste : licences, dépendances strictes, livrables documentaires. À décrire entièrement par configuration (section 6.3).",
+  "definition": {
+    "questionnaire": [],
+    "roles": [],
+    "steps": [],
+    "milestones": [],
+    "pricing": {},
+    "contract_template_id": null,
+    "compliance": {},
+    "cancellation_policy": {},
+    "matching_mode": null
+  }
+}

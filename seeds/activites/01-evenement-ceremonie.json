@@ -1,0 +1,15 @@
+{
+  "slug": "evenement-ceremonie",
+  "note": "Activité à forte fréquence et date fixe (par exemple cérémonie ou événement). Teste : planification à rebours, quantités par formule, acomptes. À décrire entièrement par configuration (section 6.3).",
+  "definition": {
+    "questionnaire": [],
+    "roles": [],
+    "steps": [],
+    "milestones": [],
+    "pricing": {},
+    "contract_template_id": null,
+    "compliance": {},
+    "cancellation_policy": {},
+    "matching_mode": null
+  }
+}

@@ -1,0 +1,248 @@
+name: bigbiim
+
+# Toute la pile de développement tourne dans Docker. Rien à installer sur votre machine.
+# Ouverture dans VS Code / Codespaces : voir README.md. Les services démarrent seuls.
+
+x-env: &env
+  NODE_ENV: development
+  CHOKIDAR_USEPOLLING: "true"
+  WATCHPACK_POLLING: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  DATABASE_URL: postgresql://bigbiim:bigbiim@postgres:5432/bigbiim?schema=public
+  REDIS_URL: redis://redis:6379
+  NATS_URL: nats://nats:4222
+  S3_ENDPOINT: http://minio:9000
+  S3_ACCESS_KEY: bigbiim
+  S3_SECRET_KEY: bigbiim-secret
+  S3_BUCKET: bigbiim
+  GOTENBERG_URL: http://gotenberg:3000
+
+x-dev: &dev
+  image: bigbiim-dev:local
+  pull_policy: never
+  working_dir: /workspace
+  volumes:
+    - .:/workspace
+    - node_modules:/workspace/node_modules
+
+services:
+  # Conteneur dans lequel VS Code s'ouvre (éditeur, git, terminal facultatif).
+  workspace:
+    <<: *dev
+    command: sleep infinity
+    environment:
+      <<: *env
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+
+  # Installe les dépendances dans le volume Docker et prépare la base.
+  deps:
+    <<: *dev
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.dev
+    command: >
+      sh -c "npm install --no-audit --no-fund &&
+      npm run build -w @bigbiim/rules &&
+      npx prisma generate --schema apps/api/prisma/schema.prisma &&
+      npx prisma db push --accept-data-loss --skip-generate --schema apps/api/prisma/schema.prisma &&
+      npx prisma db execute --file apps/api/prisma/sql/constraints.sql --schema apps/api/prisma/schema.prisma"
+    environment:
+      <<: *env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *dev
+    command: npm run start:dev -w @bigbiim/api
+    environment:
+      <<: *env
+      PORT: "4000"
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-bigbiim-api}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+    ports:
+      - "4000:4000"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      minio:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=PathPrefix(`/api`)
+      - traefik.http.routers.api.priority=10
+      - traefik.http.services.api.loadbalancer.server.port=4000
+
+  worker:
+    <<: *dev
+    command: npm run dev -w @bigbiim/worker
+    environment:
+      <<: *env
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      nats:
+        condition: service_started
+
+  web:
+    <<: *dev
+    command: npm run dev -w @bigbiim/web
+    environment:
+      <<: *env
+    ports:
+      - "3000:3000"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.web.rule=PathPrefix(`/`)
+      - traefik.http.routers.web.priority=1
+      - traefik.http.services.web.loadbalancer.server.port=3000
+
+  admin:
+    <<: *dev
+    command: npm run dev -w @bigbiim/admin
+    environment:
+      <<: *env
+      NEXT_PUBLIC_OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      NEXT_PUBLIC_OIDC_CLIENT_ID: ${OIDC_ADMIN_CLIENT_ID:-}
+      NEXT_PUBLIC_OIDC_REDIRECT_URI: ${OIDC_ADMIN_REDIRECT_URI:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.admin.rule=PathPrefix(`/admin`)
+      - traefik.http.routers.admin.priority=10
+      - traefik.http.services.admin.loadbalancer.server.port=3001
+
+  # ---- Infrastructure ----
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: bigbiim
+      POSTGRES_PASSWORD: bigbiim
+      POSTGRES_DB: bigbiim
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bigbiim -d bigbiim"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    volumes:
+      - natsdata:/data
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: bigbiim
+      MINIO_ROOT_PASSWORD: bigbiim-secret
+    volumes:
+      - miniodata:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: bigbiim
+      MINIO_ROOT_PASSWORD: bigbiim-secret
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 1; done;
+        mc mb --ignore-existing local/bigbiim
+    restart: "no"
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+
+  # Passerelle : http://localhost:8080  (/ = web, /admin = admin, /api = API)
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    ports:
+      - "8080:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # ---- Observabilité (facultatif) : désactivée par défaut ----
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:latest
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:latest
+    volumes:
+      - ./infra/observability/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "3030:3000"
+
+  loki:
+    profiles: ["observability"]
+    image: grafana/loki:latest
+
+  tempo:
+    profiles: ["observability"]
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./infra/observability/tempo.yaml:/etc/tempo.yaml:ro
+
+  alertmanager:
+    profiles: ["observability"]
+    image: prom/alertmanager:latest
+    volumes:
+      - ./infra/observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+volumes:
+  node_modules:
+  pgdata:
+  natsdata:
+  miniodata:

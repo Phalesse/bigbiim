@@ -1,0 +1,82 @@
+# Valeurs communes. Surchargées par values-dev.yaml, values-staging.yaml, values-prod.yaml.
+# Les ressources et réplicas ci-dessous sont des valeurs de départ à ajuster après test de charge.
+image:
+  registry: ghcr.io/VOTRE-COMPTE/VOTRE-DEPOT   # à remplacer
+  tag: latest
+
+# Variables non sensibles (ConfigMap)
+config:
+  NODE_ENV: production
+  DATABASE_HOST: postgres
+  REDIS_URL: redis://redis:6379
+  NATS_URL: nats://nats:4222
+  S3_ENDPOINT: http://minio:9000
+  S3_BUCKET: bigbiim
+  GOTENBERG_URL: http://gotenberg:3000
+
+# Secret Kubernetes existant (créé via External Secrets ou Sealed Secrets) : DATABASE_URL, S3_ACCESS_KEY, S3_SECRET_KEY, etc.
+secretName: bigbiim-secrets
+
+ingress:
+  enabled: true
+  className: traefik
+  host: bigbiim.example.com   # à remplacer
+  tls:
+    enabled: true
+    secretName: bigbiim-tls
+    clusterIssuer: letsencrypt  # cert-manager
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: kube-system  # namespace du contrôleur d'ingress
+
+apps:
+  api:
+    enabled: true
+    port: 4000
+    path: /api
+    replicas: 3
+    probes:
+      startup: /health/live
+      live: /health/live
+      ready: /health/ready
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    hpa: { enabled: true, min: 3, max: 10, cpu: 70 }
+  worker:
+    enabled: true
+    replicas: 2
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    hpa: { enabled: false }
+    # KEDA : mise à l'échelle selon la profondeur des files (nécessite KEDA installé)
+    keda:
+      enabled: false
+      natsMonitoringEndpoint: nats.platform.svc:8222
+      stream: BIGBIIM
+      consumer: worker
+      lagThreshold: "100"
+      minReplicas: 2
+      maxReplicas: 10
+  web:
+    enabled: true
+    port: 3000
+    path: /
+    replicas: 3
+    probes: { startup: /, live: /, ready: / }
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    hpa: { enabled: true, min: 3, max: 10, cpu: 70 }
+  admin:
+    enabled: true
+    port: 3001
+    path: /admin
+    replicas: 2
+    probes: { startup: /admin, live: /admin, ready: /admin }
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    hpa: { enabled: false }

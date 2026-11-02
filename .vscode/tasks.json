@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Base de données : appliquer le schéma Prisma",
+      "type": "shell",
+      "command": "npm run db:generate && npm run db:push",
+      "problemMatcher": []
+    },
+    {
+      "label": "Base de données : réappliquer les contraintes SQL",
+      "type": "shell",
+      "command": "npm run db:constraints",
+      "problemMatcher": []
+    },
+    {
+      "label": "Vérifier les types (tous les paquets)",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "problemMatcher": [
+        "$tsc"
+      ]
+    },
+    {
+      "label": "Lancer les tests",
+      "type": "shell",
+      "command": "npm test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Formater tout le code",
+      "type": "shell",
+      "command": "npm run format",
+      "problemMatcher": []
+    }
+  ]
+}

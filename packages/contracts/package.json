@@ -1,0 +1,11 @@
+{
+  "name": "@bigbiim/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contrats d’API (OpenAPI), événements et schéma des modèles d’activité : source de vérité",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
