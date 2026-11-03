@@ -3,33 +3,49 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  build-test:
+  docker-verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
-      DATABASE_URL: "postgresql://bigbiim:bigbiim@127.0.0.1:5432/bigbiim?schema=public"
+      DATABASE_URL: "postgresql://bigbiim:bigbiim@postgres:5432/bigbiim?schema=public"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-audit --no-fund
-      - run: npm run build -w @bigbiim/rules
-      - run: npm run db:generate
-      - run: npm run typecheck
-      - run: npm test
 
-  docker-compose-config:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Valider la configuration Docker Compose
         run: docker compose config --quiet
 
+      - name: Démarrer la pile Docker de test
+        run: |
+          docker compose up --build -d postgres redis nats minio gotenberg traefik
+
+      - name: Lancer les vérifications dans le conteneur Docker
+        run: |
+          docker compose run --rm --no-deps -T deps sh -lc "
+            npm install --no-audit --no-fund && \
+            npm run build -w @bigbiim/rules && \
+            npx prisma generate --schema apps/api/prisma/schema.prisma && \
+            npx prisma db push --accept-data-loss --skip-generate --schema apps/api/prisma/schema.prisma && \
+            npx prisma db execute --file apps/api/prisma/sql/constraints.sql --schema apps/api/prisma/schema.prisma && \
+            npm run typecheck && \
+            npm test
+          "
+
+      - name: Afficher les logs si la validation Docker échoue
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail=200
+
+      - name: Nettoyer la pile Docker
+        if: always()
+        run: docker compose down -v --remove-orphans
+
   docker-images:
     runs-on: ubuntu-latest
-    needs: build-test
+    needs: docker-verify
     strategy:
       matrix:
         app: [api, worker, web, admin]

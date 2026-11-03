@@ -347,6 +347,56 @@ function translated(value: unknown): string {
   return '';
 }
 
+function asText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(asText).join(', ');
+  if (value && typeof value === 'object') return translated(value) || JSON.stringify(value);
+  return '';
+}
+
+function getSectorOptions(items: unknown[]): string[] {
+  const sectors = new Set<string>();
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as RecordValue;
+    const candidates = [record.sector, record.sectorName, record.category, record.tags, record.subject];
+    for (const candidate of candidates) {
+      const text = asText(candidate).trim();
+      if (text) sectors.add(text);
+    }
+  }
+  return Array.from(sectors).sort((left, right) => left.localeCompare(right, 'fr'));
+}
+
+function sortListItems(items: unknown[], sortBy: string) {
+  const sorted = [...items];
+  sorted.sort((leftItem, rightItem) => {
+    const left = leftItem && typeof leftItem === 'object' ? (leftItem as RecordValue) : {};
+    const right = rightItem && typeof rightItem === 'object' ? (rightItem as RecordValue) : {};
+    const leftScore = Number(left.rating ?? left.score ?? left.popularity ?? 0);
+    const rightScore = Number(right.rating ?? right.score ?? right.popularity ?? 0);
+    const leftPrice = Number(left.minPrice ?? left.price ?? left.estimatedPrice ?? left.amount ?? 0);
+    const rightPrice = Number(right.minPrice ?? right.price ?? right.estimatedPrice ?? right.amount ?? 0);
+    const leftName = asText(left.name ?? left.title ?? left.label).toLowerCase();
+    const rightName = asText(right.name ?? right.title ?? right.label).toLowerCase();
+
+    switch (sortBy) {
+      case 'price-asc':
+        return leftPrice - rightPrice;
+      case 'price-desc':
+        return rightPrice - leftPrice;
+      case 'rating':
+        return rightScore - leftScore;
+      case 'name':
+        return leftName.localeCompare(rightName, 'fr');
+      default:
+        return 0;
+    }
+  });
+  return sorted;
+}
+
 function DataCards({ value, emptyMessage, linkBase }: { value: unknown; emptyMessage: string; linkBase?: string }) {
   const items = getItems(value);
   if (!items.length) return <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">{emptyMessage}</p>;
@@ -470,10 +520,39 @@ export default function WorkspaceScreen({ code, name, description }: { code?: st
     disputeId: '',
   }), [pathname]);
   const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState('featured');
+  const [sector, setSector] = useState('all');
   const [data, setData] = useState<ScreenData>({ loading: false });
   const [extraData, setExtraData] = useState<Record<string, ScreenData>>({});
   const [refresh, setRefresh] = useState(0);
   const [actionResponse, setActionResponse] = useState<unknown>();
+
+  const listItems = useMemo(() => {
+    if (!data.value || data.loading) return [];
+    const items = getItems(data.value);
+    const normalizedQuery = query.trim().toLowerCase();
+    const filtered = items.filter((item) => {
+      if (!item || typeof item !== 'object') return !normalizedQuery;
+      const record = item as RecordValue;
+      const haystack = [
+        asText(record.name),
+        asText(record.title),
+        asText(record.label),
+        asText(record.description),
+        asText(record.summary),
+        asText(record.sector),
+        asText(record.sectorName),
+        asText(record.category),
+      ].join(' ').toLowerCase();
+      const matchesQuery = !normalizedQuery || haystack.includes(normalizedQuery);
+      const sectorValue = asText(record.sector ?? record.sectorName ?? record.category).trim();
+      const matchesSector = sector === 'all' || !sectorValue || sectorValue === sector;
+      return matchesQuery && matchesSector;
+    });
+    return sortListItems(filtered, sortBy);
+  }, [data.loading, data.value, query, sector, sortBy]);
+
+  const sectorOptions = useMemo(() => getSectorOptions(getItems(data.value ?? [])), [data.value]);
 
   const load = useCallback(async () => {
     if (!config.endpoint) return;
@@ -509,7 +588,7 @@ export default function WorkspaceScreen({ code, name, description }: { code?: st
   }, [config.extras, ids, refresh]);
 
   const title = config.title || name;
-  const isEmpty = !data.loading && !data.error && getItems(data.value).length === 0;
+  const isEmpty = !data.loading && !data.error && listItems.length === 0;
   const links = [...(config.links ?? []), ...(pathname.startsWith('/prestataire') ? providerLinks : pathname.startsWith('/client') ? clientLinks : commonLinks)]
     .filter(([href], index, all) => all.findIndex((entry) => entry[0] === href) === index);
 
@@ -533,11 +612,32 @@ export default function WorkspaceScreen({ code, name, description }: { code?: st
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{config.description || description}</p>
         </div>
 
-        {config.search && (
-          <form onSubmit={(event) => { event.preventDefault(); setRefresh((value) => value + 1); }} className="mt-7 flex max-w-2xl flex-col gap-2 sm:flex-row">
-            <label htmlFor="activity-search" className="sr-only">Rechercher une activité</label>
-            <input id="activity-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Que souhaitez-vous organiser ?" className="min-h-12 flex-1 rounded-lg border border-slate-300 bg-white px-4 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-blue-100" />
-            <button className="min-h-12 rounded-lg bg-brand-blue px-5 font-semibold text-white hover:bg-blue-900">Rechercher</button>
+        {config.search && (pathname === '/' || pathname === '/activites') && (
+          <form onSubmit={(event) => { event.preventDefault(); setRefresh((value) => value + 1); }} className="mt-7 flex max-w-4xl flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <label htmlFor="activity-search" className="sr-only">Rechercher une activité</label>
+              <input id="activity-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Que souhaitez-vous organiser ?" className="min-h-12 flex-1 rounded-lg border border-slate-300 bg-white px-4 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-blue-100" />
+              <button className="min-h-12 rounded-lg bg-brand-blue px-5 font-semibold text-white hover:bg-blue-900">Rechercher</button>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <span>Secteur</span>
+                <select value={sector} onChange={(event) => setSector(event.target.value)} className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-blue-100">
+                  <option value="all">Tous</option>
+                  {sectorOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <span>Trier par</span>
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-blue-100">
+                  <option value="featured">Pertinence</option>
+                  <option value="name">Nom</option>
+                  <option value="price-asc">Prix croissant</option>
+                  <option value="price-desc">Prix décroissant</option>
+                  <option value="rating">Note</option>
+                </select>
+              </label>
+            </div>
           </form>
         )}
 
@@ -564,7 +664,13 @@ export default function WorkspaceScreen({ code, name, description }: { code?: st
             {data.loading && <p role="status" className="rounded-xl bg-white p-5 text-sm text-slate-600">Chargement des données…</p>}
             {data.error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p className="font-semibold">Impossible de charger ces données.</p><p className="mt-1">{data.error}</p></div>}
             {isEmpty && <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Aucun résultat n’est disponible pour le moment.</p>}
-            {!data.loading && !data.error && <DataCards value={data.value} emptyMessage="Aucune donnée à afficher." linkBase={pathname === '/client' ? '/client/projets/:id' : pathname === '/activites' || pathname === '/' ? '/activites/:id' : pathname === '/prestataire' || pathname === '/prestataire/offres' ? '/prestataire/missions/:id' : undefined} />}
+            {!data.loading && !data.error && (
+              <DataCards
+                value={pathname === '/activites' || pathname === '/' ? listItems : data.value}
+                emptyMessage="Aucune donnée à afficher."
+                linkBase={pathname === '/client' ? '/client/projets/:id' : pathname === '/activites' || pathname === '/' ? '/activites/:id' : pathname === '/prestataire' || pathname === '/prestataire/offres' ? '/prestataire/missions/:id' : undefined}
+              />
+            )}
             {actionResponse !== undefined && <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="font-semibold text-emerald-900">Réponse reçue du serveur.</p><DataCards value={actionResponse} emptyMessage="Le serveur n’a retourné aucun détail." /></div>}
           </section>
         )}
